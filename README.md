@@ -69,15 +69,37 @@ paddleocr>=3.0.0
 llama-cpp-python>=0.3.0
 ```
 
-二进制文件：
+二进制文件获取（git 仓库不含大文件，见 `.gitignore`）：
 
-- `backend/models/translategemma-4b-it.Q4_K_M.gguf`（约 2.4GB）
-  - git 仓库默认不追踪此文件（`.gitignore` 排除），避免仓库体积膨胀
-  - 获取方式：从 `google/translategemma` 仓库下载对应 GGUF 量化文件，或从本仓库 GitHub Release 下载
-  - 放置到 `backend/models/` 后，`start.sh` 默认指向该路径
-- Paddle OCR 模型（`PP-OCRv6_medium` / `PP-OCRv6_small` 的 det/rec）
-  - 首次启动时自动下载到 `~/.paddlex/official_models/`，约 3GB
-  - 离线环境下需提前下载好并挂载到该目录
+### 翻译模型 `translategemma-4b-it.Q4_K_M.gguf`（约 2.49GB）
+
+- **来源**：HuggingFace 官方模型仓库 `google/translategemma-4b-it`（受限模型，需 HF 账号登录并接受 Google 使用条款）
+  - 仓库页：`https://huggingface.co/google/translategemma-4b-it`
+  - 该仓库 `Quantizations` 标签页下有 42 个社区量化版本，选用 `Q4_K_M` GGUF 文件（约 2.49GB）
+- **获取方式**（任选其一）：
+  1. HuggingFace CLI（推荐）：
+     ```
+     pip install -U "huggingface_hub[cli]"
+     huggingface-cli login
+     # 从官方仓库下载 Q4_K_M 量化版到 backend/models/
+     huggingface-cli download google/translategemma-4b-it \
+       --include "*Q4_K_M*" \
+       --local-dir backend/models
+     ```
+  2. `ollama`（最省事，自动拉取量化版）：
+     ```
+     ollama pull google/translategemma-4b-it
+     # 拉取后从 Ollama 模型目录复制 gguf 到 backend/models/
+     ```
+  3. 手动下载：在 `https://huggingface.co/google/translategemma-4b-it` 的 `Quantizations` 标签页选 `Q4_K_M` 对应的 `.gguf` 文件下载，放置到 `backend/models/translategemma-4b-it.Q4_K_M.gguf`
+- **校验**：官方 GGUF 约 2.49GB（`2489909760` bytes 左右），放置后 `start.sh` 默认指向该路径（`TRANSLATE_MODEL_PATH`）
+
+### OCR 模型（`PP-OCRv6_medium` / `PP-OCRv6_small` 的 det/rec）
+
+- **来源**：PaddleX 官方模型仓库，首次启动自动下载到 `~/.paddlex/official_models/`，约 3GB
+- **离线部署**：提前在有网环境下载好 `~/.paddlex/` 目录并挂载到离线机器同路径，避免首次启动联网下载失败
+
+> 说明：GitHub Release 单附件上限 2GB，本仓库 2.49GB 的翻译模型无法作为 Release 附件直接上传，故统一指向 HuggingFace 官方源。本 Release 仅含源码与文档。
 
 ## 模型选择
 
