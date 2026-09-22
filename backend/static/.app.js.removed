@@ -1,0 +1,115 @@
+const dropzone = document.getElementById("dropzone");
+const fileInput = document.getElementById("file-input");
+const statusEl = document.getElementById("status");
+const resultMarkdown = document.getElementById("result-markdown");
+const resultTranslation = document.getElementById("result-translation");
+const btnTranslate = document.getElementById("btn-translate");
+const btnExportDocx = document.getElementById("btn-export-docx");
+const btnExportXlsx = document.getElementById("btn-export-xlsx");
+const btnExportPdf = document.getElementById("btn-export-pdf");
+
+let taskId = null;
+let fullText = "";
+
+function setStatus(text, isError = false) {
+  statusEl.hidden = false;
+  statusEl.textContent = text;
+  statusEl.className = "status " + (isError ? "error" : "loading");
+}
+
+function hideStatus() {
+  statusEl.hidden = true;
+}
+
+function renderMarkdown(el, text) {
+  if (window.marked) {
+    el.innerHTML = marked.parse(text || "");
+  } else {
+    el.textContent = text || "";
+  }
+}
+
+function setButtonsEnabled(enabled) {
+  btnTranslate.disabled = !enabled;
+  btnExportDocx.disabled = !enabled;
+  btnExportXlsx.disabled = !enabled;
+  btnExportPdf.disabled = !enabled;
+}
+
+dropzone.addEventListener("click", () => fileInput.click());
+dropzone.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  dropzone.classList.add("dragover");
+});
+dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+dropzone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dropzone.classList.remove("dragover");
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", () => {
+  if (fileInput.files.length) handleFile(fileInput.files[0]);
+});
+
+async function handleFile(file) {
+  setStatus("正在上传并识别，请稍候（首次运行需加载模型，可能较慢）...");
+  resultMarkdown.textContent = "识别中...";
+  resultTranslation.textContent = "尚未翻译";
+  setButtonsEnabled(false);
+  taskId = null;
+  fullText = "";
+
+  const form = new FormData();
+  form.append("file", file);
+
+  try {
+    const resp = await fetch("/api/ocr", { method: "POST", body: form });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || "识别失败");
+
+    taskId = data.task_id;
+    fullText = data.text || "";
+    renderMarkdown(resultMarkdown, data.markdown || data.text || "（无识别内容）");
+    setButtonsEnabled(true);
+    setStatus("识别完成，共 " + data.page_count + " 页");
+  } catch (err) {
+    resultMarkdown.textContent = "识别失败";
+    setStatus("错误：" + err.message, true);
+  }
+}
+
+btnTranslate.addEventListener("click", async () => {
+  if (!fullText) return;
+  const dir = document.querySelector('input[name="dir"]:checked').value;
+  const src = dir === "zh2en" ? "zh" : "en";
+  const tgt = dir === "zh2en" ? "en" : "zh";
+
+  setStatus("正在本地翻译，请稍候...");
+  resultTranslation.textContent = "翻译中...";
+
+  try {
+    const resp = await fetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: fullText, src_lang: src, tgt_lang: tgt }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || "翻译失败");
+
+    resultTranslation.textContent = data.translated || "（无译文）";
+    setStatus("翻译完成");
+  } catch (err) {
+    resultTranslation.textContent = "翻译失败";
+    setStatus("错误：" + err.message, true);
+  }
+});
+
+function bindExport(btn, format) {
+  btn.addEventListener("click", () => {
+    if (!taskId) return;
+    window.location.href = `/api/export/${taskId}?format=${format}`;
+  });
+}
+bindExport(btnExportDocx, "docx");
+bindExport(btnExportXlsx, "xlsx");
+bindExport(btnExportPdf, "pdf");

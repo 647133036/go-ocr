@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>翻译 - 本地识译</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">本地识译</a>
+      <div class="nav-links">
+        <a href="/ocr">OCR 文字识别</a>
+        <a href="/translate" class="active">翻译</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="translate-card">
+      <h1>翻译</h1>
+      <div class="divider"></div>
+      <p class="translate-intro">使用 Translation Gemma 在本地完成中、英、阿拉伯语互译</p>
+
+      <div class="translate-controls">
+        <div class="lang-row">
+          <select id="src-lang" class="select lang-select">
+            <option value="zh">中文</option>
+            <option value="en" selected>英语</option>
+            <option value="ar">阿拉伯语</option>
+          </select>
+          <button type="button" id="btn-swap" class="btn-swap" aria-label="交换语言" title="交换语言">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M7 7h11l-3-3"/>
+              <path d="M17 17H6l3 3"/>
+            </svg>
+          </button>
+          <select id="tgt-lang" class="select lang-select">
+            <option value="zh" selected>中文</option>
+            <option value="en">英语</option>
+            <option value="ar">阿拉伯语</option>
+          </select>
+        </div>
+
+        <div class="text-area-row">
+          <div class="text-area-box">
+            <textarea id="src-text" class="translate-textarea" placeholder="在此输入或粘贴要翻译的文本" spellcheck="false"></textarea>
+            <div class="textarea-footer">
+              <span id="char-count">0</span>
+              <span class="spacer"></span>
+              <button type="button" class="btn-clear" id="btn-clear">清空</button>
+            </div>
+          </div>
+          <div class="text-area-box">
+            <textarea id="tgt-text" class="translate-textarea result-area" placeholder="译文将显示在这里" readonly></textarea>
+            <div class="textarea-footer">
+              <span class="spacer"></span>
+              <button type="button" class="btn-clear" id="btn-copy">复制</button>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" id="btn-translate" class="btn btn-primary translate-btn">翻译</button>
+      </div>
+
+      <div id="progress" class="file-translate-progress"><div class="progress-bar"><div class="fill"></div></div></div>
+      <div id="status" class="translate-status"></div>
+
+      <div class="file-translate-section">
+        <p class="section-label">或翻译文本文件</p>
+
+        <div class="file-formats">
+          <span class="format-badge"><span class="icon">TXT</span> 纯文本</span>
+          <span class="format-badge"><span class="icon">PDF</span> 请先 OCR</span>
+          <span class="format-badge"><span class="icon">PNG</span> 请先 OCR</span>
+        </div>
+
+        <div id="dropzone" class="file-drop-zone">
+          <div class="drop-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+              <path d="M14 2v6h6"/>
+            </svg>
+          </div>
+          <div class="drop-text">点击选择 TXT 文件 或 拖拽到此处</div>
+          <div class="drop-hint">仅读取纯文本，不会调用 OCR。PDF / 图片请先到 OCR 页识别</div>
+          <input type="file" id="file-input" accept=".txt,text/plain" hidden />
+        </div>
+
+        <div id="file-result" class="file-result">
+          <span class="result-msg" id="file-result-msg"></span>
+          <button type="button" class="btn btn-secondary btn-download" id="file-dl-btn" hidden>下载译文</button>
+        </div>
+        <div id="file-error" class="file-error"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">本地识译 · 首次翻译需加载约 2.5GB 模型，请耐心等待</footer>
+  <script src="/static/translate.js"></script>
+</body>
+</html>

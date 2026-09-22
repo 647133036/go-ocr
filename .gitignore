@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 运行时任务缓存（OCR 后台任务中间结果）
+backend/runtime/
+
+# 大体积二进制（git 不追踪，需另行下载或从 Release 获取）
+backend/models/*.gguf
+
+# 测试样例
+600.pdf
+640.pdf
+650.pdf
+
+# 临时文件
+.monkeycode-tmp-files/
+*.tmp
+
+# 平台文档（不入仓库）
+.monkeycode/
+
+# 系统
+.DS_Store

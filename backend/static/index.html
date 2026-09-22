@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>本地识译</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">本地识译</a>
+      <div class="nav-links">
+        <a href="/ocr">OCR 文字识别</a>
+        <a href="/translate">翻译</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="hero">
+      <h1>本地离线文档工具</h1>
+      <p>OCR 版式还原与 Translation Gemma 翻译拆成两个独立功能，首次下载后可完全离线使用。</p>
+    </section>
+
+    <div class="feature-grid">
+      <a class="feature-card" href="/ocr">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="1.8">
+            <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+            <line x1="8" y1="7" x2="16" y2="7"/>
+            <line x1="8" y1="11" x2="16" y2="11"/>
+            <line x1="8" y1="15" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <h2>OCR 文字识别</h2>
+        <p>上传图片或 PDF，提取中英混排文字并按原版式导出 TXT / Word / Excel / PDF。</p>
+      </a>
+
+      <a class="feature-card" href="/translate">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="1.8">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M3 12h18"/>
+            <path d="M12 3a15 15 0 010 18"/>
+            <path d="M12 3a15 15 0 000 18"/>
+          </svg>
+        </div>
+        <h2>本地翻译</h2>
+        <p>直接粘贴文本，中 / 英 / 阿互译。使用 Translation Gemma，无需先做 OCR。</p>
+      </a>
+    </div>
+  </main>
+
+  <footer class="footer">本地识译 · PP-StructureV3 + Translation Gemma · 2 核 CPU 离线运行</footer>
+</body>
+</html>
