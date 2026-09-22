@@ -4,7 +4,7 @@
 
 ## 版本
 
-- 当前版本：**v0.0.1**
+- 当前版本：**v0.1.0**
 
 ## 功能
 
@@ -15,10 +15,11 @@
 
 ## 系统要求
 
+- 操作系统：Linux / macOS / Windows 11（桌面或命令行均可）
 - CPU：≥2 核（4 核更快，medium 模型约 4–6 分钟/页）
 - 内存：≥8GB（medium 模型推理峰值贴顶；small 模型更稳）
-- 无 GPU 要求；磁盘预留 ≥3GB（Paddle 模型缓存）
-- Python：3.10+
+- 无 GPU 要求；磁盘预留 ≥3GB（Paddle 模型缓存）+ 2.49GB（翻译模型）
+- Python：**3.11 / 3.12 / 3.13**（`paddlepaddle` 预编译 wheel 仅覆盖 3.9–3.13；3.14+ 无 wheel 会回退源码编译，失败率高，避免使用）
 
 ## 快速开始
 
@@ -60,7 +61,7 @@ backend/
     export_service.py  TXT/DOCX/XLSX/PDF/JSON 导出
   static/              前端页面（ocr.html / translate.html / index.html / style.css / ocr.js / translate.js）
   models/
-    translategemma-4b-it.Q4_K_M.gguf   翻译模型二进制（2.4GB，git 不追踪，需另行下载或随 Release 提供）
+    translategemma-4b-it.Q4_K_M.gguf   翻译模型二进制（2.49GB，git 不追踪，需另行下载）
   requirements.txt     Python 依赖
 start.sh               一键启动脚本（Linux / macOS，自动开浏览器）
 setup.sh               一键安装脚本（Linux / macOS）
@@ -70,24 +71,34 @@ setup.ps1              一键安装脚本（Windows PowerShell）
 
 ## 依赖说明
 
-Python 依赖（`backend/requirements.txt`）：
+### Python 版本
+
+| 版本 | 可否跑本项目 | 说明 |
+|------|------------|------|
+| **3.11 / 3.12 / 3.13** | 能（首选） | Paddle 预编译 wheel 全支持，安装快、最稳 |
+| 3.14 | 不确定 | Paddle 暂无 3.14 wheel，需等 Paddle 跟版 |
+| 3.15 | 不能 | 未正式发布，且 Paddle 短期无 3.15 wheel |
+
+推荐 3.12（LTS）。当前验证环境为 3.11。
+
+### Python 包依赖（`backend/requirements.txt`）
 
 ```
-fastapi>=0.110
-uvicorn[standard]>=0.29
-python-multipart>=0.0.9
-python-docx>=1.1.0
-openpyxl>=3.1.2
-PyMuPDF>=1.24.0
-pillow>=10.0.0
-paddlepaddle>=3.0.0
-paddleocr>=3.0.0
-llama-cpp-python>=0.3.0
+fastapi>=0.110              Web 框架
+uvicorn[standard]>=0.29    ASGI 服务器
+python-multipart>=0.0.9    文件上传解析
+python-docx>=1.1.0         Word 导出
+openpyxl>=3.1.2            Excel 导出
+PyMuPDF>=1.24.0            PDF 渲染与导出
+pillow>=10.0.0             图像处理（预处理/去阴影）
+paddlepaddle>=3.0.0        Paddle 推理框架（仅 3.9–3.13 有 wheel）
+paddleocr>=3.0.0           PP-StructureV3 版式还原
+llama-cpp-python>=0.3.0    Translategemma GGUF 推理（C++ 扩展，需 C 工具链）
 ```
 
-二进制文件获取（git 仓库不含大文件，见 `.gitignore`）：
+### 二进制文件（git 仓库不含大文件，见 `.gitignore`）
 
-### 翻译模型 `translategemma-4b-it.Q4_K_M.gguf`（约 2.49GB）
+#### 翻译模型 `translategemma-4b-it.Q4_K_M.gguf`（约 2.49GB）
 
 - **来源**：HuggingFace 官方模型仓库 `google/translategemma-4b-it`（受限模型，需 HF 账号登录并接受 Google 使用条款）
   - 仓库页：`https://huggingface.co/google/translategemma-4b-it`
@@ -110,7 +121,7 @@ llama-cpp-python>=0.3.0
   3. 手动下载：在 `https://huggingface.co/google/translategemma-4b-it` 的 `Quantizations` 标签页选 `Q4_K_M` 对应的 `.gguf` 文件下载，放置到 `backend/models/translategemma-4b-it.Q4_K_M.gguf`
 - **校验**：官方 GGUF 约 2.49GB（`2489909760` bytes 左右），放置后 `start.sh` 默认指向该路径（`TRANSLATE_MODEL_PATH`）
 
-### OCR 模型（`PP-OCRv6_medium` / `PP-OCRv6_small` 的 det/rec）
+#### OCR 模型（`PP-OCRv6_medium` / `PP-OCRv6_small` 的 det/rec）
 
 - **来源**：PaddleX 官方模型仓库，首次启动自动下载到 `~/.paddlex/official_models/`，约 3GB
 - **离线部署**：提前在有网环境下载好 `~/.paddlex/` 目录并挂载到离线机器同路径，避免首次启动联网下载失败
@@ -135,12 +146,14 @@ llama-cpp-python>=0.3.0
 | 变量 | 说明 | 默认 |
 |------|------|------|
 | `TRANSLATE_MODEL_PATH` | 翻译模型 GGUF 路径 | `backend/models/translategemma-4b-it.Q4_K_M.gguf` |
+| `PORT` | 服务监听端口 | `8000` |
 
 ## 已知限制
 
 - medium 模型在 7.8GB 内存机器上易 OOM，大文件建议用 small
 - 横向/多栏文档依赖 `use_doc_orientation_classify=True`，首次推理需额外布局模型
 - 翻译模型与 OCR 模型不同时常驻（识别前自动卸载翻译模型），二者并发会 OOM
+- `paddlepaddle` 无 3.14/3.15 预编译 wheel，Python 版本超过 3.13 需等待 Paddle 跟版或源码编译
 
 ## License
 
