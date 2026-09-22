@@ -26,8 +26,11 @@
 # 安装依赖
 pip install -r backend/requirements.txt
 
-# 启动服务（监听 8000）
+# 启动服务（监听 8000，自动打开浏览器）
+# Linux / macOS：
 bash start.sh
+# Windows：
+powershell -ExecutionPolicy Bypass -File start.ps1
 ```
 
 访问：
@@ -35,6 +38,16 @@ bash start.sh
 - `http://localhost:8000/` — 首页
 - `http://localhost:8000/ocr` — OCR 识别
 - `http://localhost:8000/translate` — 离线翻译
+
+### 一键安装（首次）
+
+```bash
+# Linux / macOS
+bash setup.sh
+
+# Windows
+powershell -ExecutionPolicy Bypass -File setup.ps1
+```
 
 ## 目录结构
 
@@ -49,7 +62,10 @@ backend/
   models/
     translategemma-4b-it.Q4_K_M.gguf   翻译模型二进制（2.4GB，git 不追踪，需另行下载或随 Release 提供）
   requirements.txt     Python 依赖
-start.sh               启动脚本
+start.sh               一键启动脚本（Linux / macOS，自动开浏览器）
+setup.sh               一键安装脚本（Linux / macOS）
+start.ps1              一键启动脚本（Windows PowerShell，自动开浏览器）
+setup.ps1              一键安装脚本（Windows PowerShell）
 ```
 
 ## 依赖说明
