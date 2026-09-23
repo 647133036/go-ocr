@@ -58,7 +58,7 @@ def _run_ocr_task(task_id: str, input_path: str, work_dir: str, ocr_model: str) 
 
 
 @app.post("/api/ocr")
-async def ocr(file: UploadFile = File(...), ocr_model: str = Form("medium")):
+async def ocr(file: UploadFile = File(...), ocr_model: str = Form("small")):
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in ALLOWED_EXTS:
         raise HTTPException(status_code=400, detail=f"不支持的文件格式 {ext}")

@@ -4,11 +4,11 @@
 
 ## 版本
 
-- 当前版本：**v0.1.0**
+- 当前版本：**v0.1.1**
 
 ## 功能
 
-- **OCR 识别**（`/ocr`）：`.jpg/.jpeg/.png/.bmp/.webp/.tif/.tiff/.pdf`，最大 50MB。自动排版（标题/表格/多栏），去阴影 + CLAHE + 锐化预处理，高频错字正则纠错。
+- **OCR 识别**（`/ocr`）：`.jpg/.jpeg/.png/.bmp/.webp/.tif/.tiff/.pdf`，最大 50MB。自动排版（标题/表格/多栏），自适应预处理、分栏二次识别、高频错字纠错。
 - **离线翻译**（`/translate`）：`google/translategemma`（Q4_K_M GGUF），无需联网，支持中英日法德等。
 - **导出**：TXT / DOCX / XLSX / PDF / JSON。
 - 两个功能独立分页，视觉风格参考 FlowConvert。
@@ -56,7 +56,7 @@ powershell -ExecutionPolicy Bypass -File setup.ps1
 backend/
   app/
     main.py            FastAPI 入口 + 异步 OCR 任务 + 静态页路由
-    ocr_service.py     PP-StructureV3 + 预处理 + 纠错表 + 模型缓存
+    ocr_service.py     PP-StructureV3 + 预处理 + 分栏识别 + 纠错表
     translate_service.py  Translategemma 加载/卸载 + 推理
     export_service.py  TXT/DOCX/XLSX/PDF/JSON 导出
   static/              前端页面（ocr.html / translate.html / index.html / style.css / ocr.js / translate.js）
@@ -108,7 +108,6 @@ llama-cpp-python>=0.3.0    Translategemma GGUF 推理（C++ 扩展，需 C 工�
      ```
      pip install -U "huggingface_hub[cli]"
      huggingface-cli login
-     # 从官方仓库下载 Q4_K_M 量化版到 backend/models/
      huggingface-cli download google/translategemma-4b-it \
        --include "*Q4_K_M*" \
        --local-dir backend/models
@@ -116,17 +115,16 @@ llama-cpp-python>=0.3.0    Translategemma GGUF 推理（C++ 扩展，需 C 工�
   2. `ollama`（最省事，自动拉取量化版）：
      ```
      ollama pull google/translategemma-4b-it
-     # 拉取后从 Ollama 模型目录复制 gguf 到 backend/models/
      ```
-  3. 手动下载：在 `https://huggingface.co/google/translategemma-4b-it` 的 `Quantizations` 标签页选 `Q4_K_M` 对应的 `.gguf` 文件下载，放置到 `backend/models/translategemma-4b-it.Q4_K_M.gguf`
+  3. 手动下载：在 `https://huggingface.co/google/translategemma-4b-it` 的 `Quantizations` 标签页选 `Q4_K_M` 对应的 `.gguf` 文件，放到 `backend/models/translategemma-4b-it.Q4_K_M.gguf`
 - **校验**：官方 GGUF 约 2.49GB（`2489909760` bytes 左右），放置后 `start.sh` 默认指向该路径（`TRANSLATE_MODEL_PATH`）
 
 #### OCR 模型（`PP-OCRv6_medium` / `PP-OCRv6_small` 的 det/rec）
 
 - **来源**：PaddleX 官方模型仓库，首次启动自动下载到 `~/.paddlex/official_models/`，约 3GB
-- **离线部署**：提前在有网环境下载好 `~/.paddlex/` 目录并挂载到离线机器同路径，避免首次启动联网下载失败
+- **离线部署**：提前在有网环境下载好 `~/.paddlex/` 目录并挂载到离线机器同路径
 
-> 说明：GitHub Release 单附件上限 2GB，本仓库 2.49GB 的翻译模型无法作为 Release 附件直接上传，故统一指向 HuggingFace 官方源。本 Release 仅含源码与文档。
+> GitHub Release 单附件上限 2GB，翻译模型 2.49GB 无法作为附件上传，统一指向 HuggingFace 官方源。本 Release 仅含源码与文档。
 
 ## 模型选择
 
@@ -136,6 +134,15 @@ llama-cpp-python>=0.3.0    Translategemma GGUF 推理（C++ 扩展，需 C 工�
 | `PP-OCRv6_medium` | 识别率更高，4–6 分钟/页 | 模糊字迹、考试卷/低清扫描 | 易 OOM，大文件 530 风险 |
 
 前端 `/ocr` 页可选，默认 small。medium 在大文件上内存峰值超 7.8GB 会触发 OOM kill，前置代理返回 530；重启服务即可恢复。
+
+## OCR 效果（v0.1.1）
+
+- **原生像素优先**：扫描件多条带 JPEG（如横向考试卷）直接拼接原图像素，低清截图直接提取原生图，避免 300 DPI 二次压缩。
+- **自适应预处理**：低对比度走去阴影 + CLAHE + 锐化；清晰图只轻度锐化；短边 <720 先放大。
+- **检测参数**：`layout_threshold=0.3`、`text_det_box_thresh=0.5`、`text_det_unclip_ratio=1.8`、`text_det_limit_side_len=960`，并开启行方向分类。
+- **分栏二次识别**：横向多栏页按墨水竖向投影切栏，每栏单独 OCR 再从左到右拼接，减少跨栏粘连和漏字。
+- **阅读顺序**：文本块按栏内从上到下、栏从左到右排序。
+- **纠错表**：对扫描件常见字形混淆做正则替换（`thc→the`、`調分→满分` 等），同时作用于 text / markdown / 表格块。
 
 ## OCR 任务异步化
 
@@ -151,9 +158,10 @@ llama-cpp-python>=0.3.0    Translategemma GGUF 推理（C++ 扩展，需 C 工�
 ## 已知限制
 
 - medium 模型在 7.8GB 内存机器上易 OOM，大文件建议用 small
-- 横向/多栏文档依赖 `use_doc_orientation_classify=True`，首次推理需额外布局模型
+- 横向/多栏文档依赖方向分类 + 分栏二次识别；源图过糊时仍受 small 模型能力上限约束
 - 翻译模型与 OCR 模型不同时常驻（识别前自动卸载翻译模型），二者并发会 OOM
 - `paddlepaddle` 无 3.14/3.15 预编译 wheel，Python 版本超过 3.13 需等待 Paddle 跟版或源码编译
+- PaddleOCR-VL 在 8GB 无 GPU 环境不可用，本版本未接入
 
 ## License
 
